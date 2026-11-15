@@ -8,7 +8,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>NIGHT SHIFT — LAST SURVIVORS</title>
   <meta name="description" content="Horror 3D multiplayer asimmetrico: un cacciatore e quattro sopravvissuti. Escape the night.">
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/style.css?v=12">
 </head>
 <body>
   <canvas id="scene" aria-label="Scena di gioco tridimensionale"></canvas>
@@ -77,6 +77,7 @@
       </div>
       <div id="touchQuick"><button type="button" id="touchMap" aria-label="Mostra o nascondi mappa">▦ MAPPA</button><button type="button" id="touchPause" aria-label="Pausa controlli">Ⅱ PAUSA</button></div>
       <div id="touchLookTip">SCORRI SULLO SCHERMO PER GUARDARE</div>
+      <div id="movementStatus" aria-live="off">JOYSTICK PRONTO</div>
     </div>
     <div id="dangerWarning">⚠ THREAT DETECTED</div>
     <div id="scoreboard" class="hidden"><div class="section-head"><span>PERSONALE DELLA STRUTTURA</span><span>SCORRE TUTTO</span></div><div id="scoreList"></div><p>TAB per chiudere</p></div>
@@ -87,6 +88,6 @@
   <section id="results" class="screen"><div class="result-body"><div class="micro">MISSION DEBRIEF / END OF SHIFT</div><div class="result-sigil">✦</div><h2 id="resultTitle">IL TURNO È FINITO</h2><p id="resultReason"></p><div id="resultStats"></div><button id="restartBtn" class="btn btn-primary wide">TORNA ALLA LOBBY <span>→</span></button><button id="exitResultsBtn" class="btn btn-small ghost wide">TORNA AL MENU PRINCIPALE</button><div id="restartWait" class="hint"></div></div></section>
   <div id="toast" role="status"></div>
   <script src="/socket.io/socket.io.js"></script>
-  <script type="module" src="/game.js"></script>
+  <script type="module" src="/game.js?v=12"></script>
 </body>
 </html>

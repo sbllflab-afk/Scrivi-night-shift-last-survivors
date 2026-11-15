@@ -9,6 +9,7 @@ import {
   GENERATOR_TILES,EXIT_TILES,SURVIVOR_SPAWNS,HUNTER_SPAWN,
   tileToWorld,moveCircle,gridPath,distance,clamp,lineClear,normalizeAngle
 } from './public/world.js';
+import {movementDelta,yawTowards} from './public/controls.js';
 
 const ROOT=path.dirname(fileURLToPath(import.meta.url));
 const app=express();
@@ -123,7 +124,7 @@ function endRoom(r,winner,reason) {
 function hit(r,killer) {
   if(!killer.alive||killer.attackCd>0)return;
   killer.attackCd=1.22;killer.gesture++;
-  const dir={x:Math.sin(killer.yaw),z:-Math.cos(killer.yaw)};
+  const dir={x:-Math.sin(killer.yaw),z:-Math.cos(killer.yaw)};
   let target=null,best=3.05;
   for(const p of r.players.values()) {
     if(p.role!=='survivor'||!p.alive||p.escaped||p.invulnerable>0)continue;
@@ -143,7 +144,6 @@ function movePlayer(p,dt) {
   if(!p.alive||p.escaped)return;
   const input=p.input||{};const f=clamp(Number(input.f)||0,-1,1),s=clamp(Number(input.s)||0,-1,1);
   if(Number.isFinite(input.yaw))p.yaw=normalizeAngle(input.yaw);
-  const len=Math.max(1,Math.hypot(f,s));
   let speed=p.role==='hunter'?5.55:4.55;
   p.sprint=Boolean(input.sprint)&&((p.role==='hunter')||p.stamina>1)&&f>0;
   p.crouch=p.role==='survivor'&&Boolean(input.crouch);
@@ -152,8 +152,7 @@ function movePlayer(p,dt) {
   else if(p.sprint){speed=7.65;p.stamina=Math.max(0,p.stamina-26*dt);}
   else p.stamina=Math.min(100,p.stamina+18*dt);
   if(p.slow>0)speed*=.48;
-  const dx=(f*Math.sin(p.yaw)+s*Math.cos(p.y))/len*speed*dt;
-  const dz=(-f*Math.cos(p.yaw)+s*Math.sin(p.yaw))/len*speed*dt;
+  const {dx,dz}=movementDelta(f,s,p.yaw,speed,dt);
   const next=moveCircle(p,dx,dz,p.role==='hunter'?.52:.39);
   p.step=Math.hypot(next.x-p.x,next.z-p.z)>0.012?p.step+dt*(p.sprint?1.7:1):p.step;
   p.x=next.x;p.z=next.z;
@@ -175,7 +174,7 @@ function updateBot(r,p,dt) {
       target=liveG[Math.floor((Date.now()/9000+p.id.length)%Math.max(1,liveG.length))]||nearest;
     }
     if(distance(p,nearest)<2.9&&p.attackCd<=0&&lineClear(p,nearest)){
-      p.yaw=Math.atan2(nearest.x-p.x,-(nearest.z-p.z));hit(r,p);
+      p.yaw=yawTowards(nearest.x-p.x,nearest.z-p.z);hit(r,p);
     }
     if(p.abilityCd<=0&&tracking){p.reveal=4;p.abilityCd=22;event(r,'THE WARDEN ha attivato l’ecoscandaglio!','danger');}
   } else {
@@ -203,7 +202,7 @@ function updateBot(r,p,dt) {
   const next=p.path[p.pathAt]||target;
   const d=distance(p,next);
   if(d>.15){
-    p.yaw=Math.atan2(next.x-p.x,-(next.z-p.z));
+    p.yaw=yawTowards(next.x-p.x,next.z-p.z);
     p.input={f:1,s:0,sprint:p.role==='hunter'&&distance(p,target)<15,yaw:p.yaw,interact:false};
     if(p.role==='survivor')p.input.sprint=Boolean(players.find(q=>q.role==='hunter'&&distance(p,q)<11));
   }else p.input={f:0,s:0,yaw:p.yaw,interact:!!p.input.interact};

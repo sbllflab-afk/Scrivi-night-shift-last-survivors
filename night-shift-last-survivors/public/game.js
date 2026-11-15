@@ -1,9 +1,9 @@
 import * as THREE from '/vendor/three/build/three.module.js';
-import {joystickVector,movementAxes,clampedPitch} from '/controls.js';
+import {joystickVector,movementAxes,clampedPitch,movementDelta} from '/controls.js?v=12';
 import {
   TILE,MW,MH,MAP,GENERATOR_TILES,EXIT_TILES,GEN_DURATION,REQUIRED_GENERATORS,
   tileToWorld,worldToTile,moveCircle,distance,clamp,twoDigit
-} from '/world.js';
+} from '/world.js?v=12';
 
 const $=id=>document.getElementById(id);
 const socket=window.io({autoConnect:true,reconnection:true});
@@ -24,6 +24,7 @@ const isTouchDevice = () => matchMedia('(pointer: coarse)').matches ||
 let touchMode = isTouchDevice();
 document.documentElement.classList.toggle('touch-device', touchMode);
 const touch = {enabled:false, joystickId:null, lookId:null, lookX:0, lookY:0,
+  blockedFor:0, previousPred:null, lastServerAt:0,
   axis:{f:0,s:0}, sprint:false, interact:false, crouch:false, attack:false,
   lastAttack:0, lookSensitivity:1.0,holdPointers:{}};
 let noticeTimer=0;
@@ -383,16 +384,17 @@ socket.on('room:state',r=>{
 });
 socket.on('match:start',s=>{
  state.onceStarted=true;state.events=[];state.snapshot=s;state.previousHealth=2;state.local=null;state.pred=null;
- state.pressed.clear();resetTouchInputs();touch.enabled=false;state.pitch=0;state.flashlight=true;state.attackPulse=0;state.roarPulse=0;
+ state.pressed.clear();resetTouchInputs();touch.enabled=touchMode;state.pitch=0;state.flashlight=true;state.attackPulse=0;state.roarPulse=0;
  state.entities.forEach(e=>scene.remove(e.mesh));state.entities.clear();
- showcase.visible=false;screen('game');$('pause').classList.remove('hidden');$('deadOverlay').classList.add('hidden');$('deadOverlay').querySelector('h2').textContent='NON CE L’HAI FATTA.';$('deadOverlay').querySelector('p').textContent='Puoi osservare gli altri finché la partita non termina.';$('scoreboard').classList.add('hidden');
+ showcase.visible=false;screen('game');$('pause').classList.toggle('hidden',touchMode);$('deadOverlay').classList.add('hidden');$('deadOverlay').querySelector('h2').textContent='NON CE L’HAI FATTA.';$('deadOverlay').querySelector('p').textContent='Puoi osservare gli altri finché la partita non termina.';$('scoreboard').classList.add('hidden');
  $('resumeBtn').textContent=touchMode?'TOCCA PER GIOCARE →':'ENTRA NELLA NOTTE →';buildHands(s.players.find(p=>p.id===socket.id)?.role||'survivor');
  $('feed').replaceChildren();$('genList').replaceChildren();createFeed('La notte è cominciata. Buona fortuna.','objective');
+ if(touchMode)toast('Joystick SINISTRA per muoverti · trascina DESTRA per guardare');
  for(const p of s.players)if(p.id===socket.id){state.local=p;state.pred={x:p.x,z:p.z};state.yaw=p.yaw;break;}
  audio.start();renderHud();
 });
 socket.on('match:state',s=>{
- if(state.phase!=='game')return;state.snapshot=s;
+ if(state.phase!=='game')return;state.snapshot=s;touch.lastServerAt=performance.now();
  const self=s.players.find(p=>p.id===socket.id);
  if(self){
   if(state.local&&self.health<state.previousHealth){damageEffect();audio.sound('hit');}
@@ -436,6 +438,7 @@ const gameActive=()=>state.phase==='game'&&state.local?.alive&&!state.local?.esc
 const locked=()=>document.pointerLockElement===$('scene');
 const controlsActive=()=>gameActive()&&(touchMode?touch.enabled:locked());
 function resetTouchInputs(){
+  touch.blockedFor=0;
   touch.axis={f:0,s:0};touch.sprint=false;touch.interact=false;touch.attack=false;touch.crouch=false;
   for(const [id,pointerId] of Object.entries(touch.holdPointers||{})){const el=$(id);if(el?.hasPointerCapture?.(pointerId))el.releasePointerCapture(pointerId);}
   touch.holdPointers={};
@@ -541,6 +544,8 @@ joystick.addEventListener('pointerdown',e=>{
   e.preventDefault();touch.joystickId=e.pointerId;joystick.setPointerCapture?.(e.pointerId);moveJoystick(e);
 });
 joystick.addEventListener('pointermove',e=>{if(e.pointerId===touch.joystickId){e.preventDefault();moveJoystick(e);}});
+// Safety: some mobile browsers may route pointer movement to the document during a gesture.
+document.addEventListener('pointermove',e=>{if(e.pointerId===touch.joystickId&&e.target!==joystick){moveJoystick(e);}}, {passive:true});
 function endJoystick(e){if(e.pointerId!==touch.joystickId)return;touch.joystickId=null;touch.axis={f:0,s:0};knob.style.transform='translate(-50%,-50%)';}
 for(const type of ['pointerup','pointercancel','lostpointercapture'])joystick.addEventListener(type,endJoystick);
 // The 3-D canvas itself is the look surface: any free finger can swipe to aim.
@@ -588,7 +593,8 @@ document.addEventListener('visibilitychange',()=>{
   if(document.hidden){state.pressed.clear();resetTouchInputs();if(touchMode&&touch.enabled)pauseTouch();}
 });
 window.addEventListener('resize',()=>{
-  touchMode=isTouchDevice();document.documentElement.classList.toggle('touch-device',touchMode);
+  const previous=touchMode;touchMode=isTouchDevice();document.documentElement.classList.toggle('touch-device',touchMode);
+  if(!previous&&touchMode&&state.phase==='game'&&gameActive()){touch.enabled=true;$('pause').classList.add('hidden');}
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,touchMode?1.05:1.65));
   camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);
 });
@@ -656,7 +662,7 @@ function renderRadar(){const s=state.snapshot,p=state.local;if(!s||!p)return;
   point(q.x,q.z,q.role==='hunter'?'#fc6449':'#82b7ad',3);
  }
  const pp=state.pred||p;point(pp.x,pp.z,'#ffffff',4);
- const [i,j]=worldToTile(pp.x,pp.z);ctx.save();ctx.translate(pad+(i+.5)*cw,pad+(j+.5)*ch);ctx.rotate(state.yaw);
+ const [i,j]=worldToTile(pp.x,pp.z);ctx.save();ctx.translate(pad+(i+.5)*cw,pad+(j+.5)*ch);ctx.rotate(-state.yaw);
  ctx.fillStyle='#f6f0d9';ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(-4,4);ctx.lineTo(4,4);ctx.closePath();ctx.fill();ctx.restore();
  ctx.strokeStyle='rgba(133,198,186,.36)';ctx.strokeRect(pad,pad,W-pad*2,H-pad*2);
 }
@@ -712,14 +718,27 @@ function frame(now){if(!running)return;requestAnimationFrame(frame);
  if(playing){
   const p=state.local;const pred=state.pred||{x:p.x,z:p.z};
   if(controlsActive()){
-   const input=inputState(),len=Math.max(1,Math.hypot(input.f,input.s));
+   const input=inputState();
    let speed=p.role==='hunter'?(input.sprint&&input.f>0?7.1:5.55):
      input.crouch?2.35:(input.sprint&&input.f>0&&p.stamina>0?7.65:4.55);
-   const next=moveCircle(pred,((input.f*Math.sin(state.yaw)+input.s*Math.cos(state.yaw))/len)*speed*dt,
-    ((-input.f*Math.cos(state.yaw)+input.s*Math.sin(state.yaw))/len)*speed*dt,p.role==='hunter'?.52:.39);
+   const delta=movementDelta(input.f,input.s,state.yaw,speed,dt);
+   const next=moveCircle(pred,delta.dx,delta.dz,p.role==='hunter'?.52:.39);
    const moved=Math.hypot(next.x-pred.x,next.z-pred.z);pred.x=next.x;pred.z=next.z;
+   if(touchMode){
+     const requested=Math.hypot(input.f,input.s)>.2;
+     touch.blockedFor=(requested&&moved<.0001)?Math.min(2,touch.blockedFor+dt):0;
+   }
    state.cameraWobble+=moved*2.8;
    if(moved>.012&&t-state.lastStep>(speed>6?.30:.42)){state.lastStep=t;audio.sound('step');}
+  }
+  if(touchMode){
+   const status=$('movementStatus');
+   if(status){
+    if(!socket.connected)status.textContent='RETE ASSENTE';
+    else if(touch.blockedFor>.5)status.textContent='PARETE DAVANTI: GIRA';
+    else if(controlsActive()&&Math.hypot(touch.axis.f,touch.axis.s)>.12)status.textContent='MOVIMENTO ATTIVO';
+    else status.textContent='JOYSTICK PRONTO';
+   }
   }
   let cameraTarget=pred;
   if(!p.alive||p.escaped){const spectator=state.snapshot.players.find(q=>q.role==='survivor'&&q.alive&&!q.escaped&&q.id!==p.id);

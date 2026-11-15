@@ -31,6 +31,8 @@ export function distance(a,b) { return Math.hypot(a.x-b.x,a.z-b.z); }
 export function clamp(v,mi,ma) { return Math.max(mi,Math.min(ma,v)); }
 export function normalizeAngle(a) { return Math.atan2(Math.sin(a),Math.cos(a)); }
 export function legalPosition(x,z,r=0.38) {
+  // Invalid coordinates must NEVER be interpreted as an empty/collision-free position.
+  if(!Number.isFinite(x)||!Number.isFinite(z)||!Number.isFinite(r)||r<=0)return false;
   const [ci,cj]=worldToTile(x,z);
   for(let j=cj-2;j<=cj+2;j++)for(let i=ci-2;i<=ci+2;i++) {
     if(!solid(i,j))continue;
@@ -41,6 +43,8 @@ export function legalPosition(x,z,r=0.38) {
   return true;
 }
 export function moveCircle(p,dx,dz,r=0.38) {
+  if(!Number.isFinite(p.x)||!Number.isFinite(p.z))return {x:0,z:0};
+  if(!Number.isFinite(dx)||!Number.isFinite(dz))return {x:p.x,z:p.z};
   // Substeps prevent fast clients or lag spikes tunnelling through walls.
   const steps=Math.max(1,Math.ceil(Math.hypot(dx,dz)/0.55));
   let x=p.x,z=p.z;

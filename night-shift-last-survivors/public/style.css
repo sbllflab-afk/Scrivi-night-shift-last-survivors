@@ -105,3 +105,8 @@ html,body {overscroll-behavior:none}
 .touch-device #sideHud{top:calc(144px + env(safe-area-inset-top))}
 .touch-device #feed{top:calc(237px + env(safe-area-inset-top))}
 @media (pointer:coarse) and (max-height:480px) and (orientation:landscape){.touch-device #sideHud{top:calc(106px + env(safe-area-inset-top))}}
+
+/* Movement confirmation — helps distinguish touch input from wall collisions. */
+#movementStatus{display:none}
+.touch-device #hud:not(.hidden) #movementStatus{display:block;position:absolute;left:50%;bottom:calc(8px + env(safe-area-inset-bottom));transform:translateX(-50%);pointer-events:none;z-index:13;padding:4px 9px;border-radius:6px;background:rgba(4,20,23,.72);border:1px solid rgba(118,220,196,.33);color:#b7f6e2;font:700 10px var(--mono);letter-spacing:.6px;white-space:nowrap;text-shadow:0 1px 3px #000}
+@media (max-width:700px) and (orientation:portrait){.touch-device #movementStatus{bottom:calc(180px + env(safe-area-inset-bottom))!important;font-size:9px!important}}
