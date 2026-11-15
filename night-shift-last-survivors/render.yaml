@@ -4,6 +4,7 @@ services:
   - type: web
     name: night-shift-last-survivors
     runtime: node
+    rootDir: night-shift-last-survivors
     plan: free
     region: frankfurt
     buildCommand: npm install --omit=dev --no-audit --no-fund
