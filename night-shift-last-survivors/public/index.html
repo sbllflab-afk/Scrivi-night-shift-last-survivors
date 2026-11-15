@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090c11">
+  <title>NIGHT SHIFT — LAST SURVIVORS</title>
+  <meta name="description" content="Horror 3D multiplayer asimmetrico: un cacciatore e quattro sopravvissuti. Escape the night.">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <canvas id="scene" aria-label="Scena di gioco tridimensionale"></canvas>
+  <div id="grain"></div><div id="vignette"></div><div id="flashDamage"></div>
+  <div id="connection"><span id="led"></span><span id="connectionText">COLLEGAMENTO...</span></div>
+
+  <section id="menu" class="screen active">
+    <div class="menu-lines"></div>
+    <main class="menu-main">
+      <div class="micro"><span class="signal">●</span> ARCHIVE // SECTOR 09 <span class="sep">/</span> CO-OP HORROR EXPERIENCE</div>
+      <div class="title-lockup">
+        <div class="supertitle">THE NIGHT IS WATCHING</div>
+        <h1>NIGHT <span>SHIFT</span></h1>
+        <div class="subtitle"><span class="subtitle-rule"></span> LAST SURVIVORS <span class="subtitle-rule"></span></div>
+      </div>
+      <p class="lead">Cinque estranei. Una struttura abbandonata.<br>Una creatura che non dovrebbe esistere.<br><strong>Sopravvivi fino all'alba, oppure diventa l'incubo.</strong></p>
+      <div class="menu-controls">
+        <label class="field-label" for="playerName">IDENTITÀ OPERATORE</label>
+        <div class="input-line"><span class="input-icon">▣</span><input id="playerName" maxlength="16" autocomplete="nickname" placeholder="Il tuo nome" value="Sopravvissuto"></div>
+        <button id="createBtn" class="btn btn-primary"><span>CREA UNA STANZA</span><span class="btn-arrow">↗</span></button>
+        <div class="join"><div class="input-line"><span class="input-icon">#</span><input id="joinCode" maxlength="5" placeholder="CODICE" spellcheck="false" autocapitalize="characters"></div><button id="joinBtn" class="btn btn-outline">ENTRA <span>→</span></button></div>
+        <div class="caption-keys"><span>01 / MULTIPLAYER ONLINE</span><span>02 / BOT INTELLIGENTI</span><span>03 / DESKTOP PC</span></div>
+        <div id="menuError" class="error" role="alert"></div>
+      </div>
+    </main>
+    <div class="menu-aside"><span>SECURITY FEED 08</span><span>NO SIGNAL // 00:00:00</span><span class="tiny-dash"></span></div>
+    <div class="footer-status">◼ SYSTEM STATUS: <span>UNSTABLE</span> <i></i> 16:9 CINEMATIC HORROR <span class="right">NIGHT SHIFT © ORIGINAL GAME PROJECT</span></div>
+  </section>
+
+  <section id="lobby" class="screen">
+    <div class="lobby-panel">
+      <div class="micro"><span class="signal">●</span> PRIVATE OPERATIONS / MATCHMAKING</div>
+      <h2>STANZA <em id="roomCode">-----</em></h2>
+      <p class="hint">Condividi il codice con gli amici. Fino a cinque persone, in tempo reale.</p>
+      <div class="room-actions"><button id="copyRoom" class="btn btn-small">▤ COPIA INVITO</button><button id="leaveRoom" class="btn btn-small ghost">← ESCI</button></div>
+      <div class="section-head"><span>OPERATORI COLLEGATI</span><span id="roomCount">0 / 5</span></div>
+      <div id="playerList" class="player-list"></div>
+      <div class="pref-grid"><label for="rolePref">PREFERENZA RUOLO</label><select id="rolePref"><option value="survivor">SOPRAVVISSUTO</option><option value="hunter">ASSASSINO</option><option value="random">CASUALE</option></select></div>
+      <label class="check-line" id="botsRow"><input id="fillBots" type="checkbox" checked> <span>Completa automaticamente con bot IA</span></label>
+      <button id="startBtn" class="btn btn-primary wide">INIZIA LA NOTTE <span>→</span></button>
+      <div id="startHint" class="hint small"></div>
+      <div class="section-head chat-head"><span>FREQUENZA RADIO / CHAT</span><span>COMMS 01</span></div>
+      <div id="chatLog" class="chat-log"></div>
+      <div class="chat-send"><input id="chatInput" placeholder="Scrivi un messaggio..." maxlength="120"><button id="chatBtn" aria-label="Invia messaggio">➤</button></div>
+    </div>
+    <div class="lobby-right"><div class="folder">CLASSIFIED // CASE 0042</div><h3>DO NOT<br><em>LET IT</em><br>FIND YOU.</h3><p>Riparate 4 generatori per riattivare le uscite. Se sei il cacciatore, nessuno deve tornare a casa.</p><div class="lobby-warning">⚠ ALL PERSONNEL ACCOUNTED FOR</div></div>
+  </section>
+
+  <div id="hud" class="hidden">
+    <div id="topHud"><div class="logo-mini">N/S <span>THE NIGHT IS WATCHING</span></div><div class="hud-objective"><div id="objectiveText">RIPRISTINA L'ALIMENTAZIONE</div><div id="objectiveCount">0 / 4 GENERATORI</div></div><div class="time-box"><div>TIME TO DAWN</div><strong id="timer">07:00</strong></div></div>
+    <div id="sideHud"><div class="hud-label">OBJECTIVES <span id="sideObjectiveCount">0 / 4</span></div><div id="genList"></div><div class="hud-label middle-label">SECTOR MAP <span>[M]</span></div><canvas id="minimap" width="244" height="198"></canvas><div class="players-indicator" id="survivorRemaining">4 RIMASTI</div></div>
+    <div id="feed"></div>
+    <div id="crosshair"><span class="c-t"></span><span class="c-r"></span><span class="c-b"></span><span class="c-l"></span><i></i></div>
+    <div id="hitmark">✕</div><div id="alertText"></div>
+    <div id="interactContainer"><div id="interactLabel"></div><div id="interactTrack"><div id="interactFill"></div></div></div>
+    <div id="bottomHud"><div class="status-panel"><span id="roleLabel">SURVIVOR / CLASS D</span><div class="status-big" id="playerHealth">♥ ♥</div><div class="health-line">VITAL SIGNS <span id="healthText">NORMAL</span></div></div><div class="stamina-panel"><div class="stamina-header">STAMINA <span id="staminaValue">100%</span></div><div class="meter"><div id="staminaFill"></div></div><div class="key-legend" id="keyLegend">WASD MOVIMENTO · SHIFT CORSA · E INTERAGISCI · F TORCIA</div></div><div class="tool-panel" id="toolPanel"><span>ACTIVE EQUIPMENT</span><b id="toolName">FLASHLIGHT / MK-1</b><small id="toolDetail">[F] TOGGLE</small></div></div>
+    <div id="dangerWarning">⚠ THREAT DETECTED</div>
+    <div id="scoreboard" class="hidden"><div class="section-head"><span>PERSONALE DELLA STRUTTURA</span><span>SCORRE TUTTO</span></div><div id="scoreList"></div><p>TAB per chiudere</p></div>
+    <div id="pause" class="hidden"><div class="pause-box"><div class="micro">CONNECTION PAUSED / CONTROL LOCK</div><h2>PAUSA</h2><p>Il gioco online continua anche quando il mouse è sbloccato.</p><button id="resumeBtn" class="btn btn-primary wide">RIPRENDI <span>→</span></button><div class="pause-tips">WASD MUOVITI &nbsp; • &nbsp; M MAPPA &nbsp; • &nbsp; TAB GIOCATORI &nbsp; • &nbsp; ESC MOUSE LIBERO</div><button id="muteBtn" class="btn btn-small ghost">AUDIO: ATTIVO</button><button id="abandonBtn" class="btn btn-small ghost">ABBANDONA LA STANZA</button></div></div>
+    <div id="deadOverlay" class="hidden"><div class="micro">NO VITAL SIGNS DETECTED</div><h2>NON CE L'HAI FATTA.</h2><p>Puoi osservare gli altri finché la partita non termina.</p></div>
+  </div>
+
+  <section id="results" class="screen"><div class="result-body"><div class="micro">MISSION DEBRIEF / END OF SHIFT</div><div class="result-sigil">✦</div><h2 id="resultTitle">IL TURNO È FINITO</h2><p id="resultReason"></p><div id="resultStats"></div><button id="restartBtn" class="btn btn-primary wide">TORNA ALLA LOBBY <span>→</span></button><button id="exitResultsBtn" class="btn btn-small ghost wide">TORNA AL MENU PRINCIPALE</button><div id="restartWait" class="hint"></div></div></section>
+  <div id="toast" role="status"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/game.js"></script>
+</body>
+</html>

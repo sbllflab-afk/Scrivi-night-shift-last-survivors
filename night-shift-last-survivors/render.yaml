@@ -1,0 +1,16 @@
+# NIGHT SHIFT — LAST SURVIVORS | Deploy gratuito su Render
+# Inserire questo file nella root del repository GitHub insieme a package.json.
+services:
+  - type: web
+    name: night-shift-last-survivors
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install --omit=dev --no-audit --no-fund
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22.16.0"
+      - key: NODE_ENV
+        value: production
