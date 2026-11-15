@@ -1,10 +1,12 @@
 # NIGHT SHIFT — LAST SURVIVORS
 
-**Survival horror multiplayer 3D in prima persona, 4 sopravvissuti contro 1 animatronico originale.**
+**Survival horror multiplayer 3D in prima persona, 4 sopravvissuti contro 1 animatronico originale. Versione 1.1 con controlli touch e ottimizzazioni smartphone.**
 
 Gioco originale, ispirato alle *meccaniche* degli horror asimmetrici: nessun modello, personaggio o asset protetto copiato da Roblox o da altri videogiochi.
 
 ## Giocare online su Render (hosting gratuito)
+
+**Il gioco già online si aggiorna tramite GitHub.** Leggi `AGGIORNAMENTO_RENDER.md` per mantenere intatta la tua configurazione Render esistente.
 
 Questa versione include il file **`render.yaml`** per il deploy su Render come servizio Node.js nella regione di Francoforte. **Consulta `RENDER_GUIDA.md` per la procedura completa GitHub → Render**. Non usare lo Static Site, perché il gioco richiede un server multiplayer.
 
@@ -46,6 +48,21 @@ Non è necessario installare Roblox. Il server gestisce fisicamente i personaggi
 
 **Durata del turno**: 7 minuti (420 secondi). Stanza privata di 5 persone massimo.
 
+### Comandi per smartphone (Android / iPhone)
+
+Apri **lo stesso link pubblico di Render** direttamente dal telefono; non serve installare un'app.
+Sono supportati anche schermi verticali, ma **la modalità orizzontale (landscape) è consigliata**.
+
+- Tocca **TOCCA PER GIOCARE** all'inizio della partita.
+- **Joystick a sinistra:** cammina con velocità analogica, anche in diagonale.
+- **Scorri con un altro dito sullo schermo:** gira la telecamera e guarda in alto/basso.
+- **CORRI:** tieni premuto per correre (consuma stamina); **TIENI E USA:** tieni premuto per riparare, curare o fuggire.
+- **GIÙ:** attiva/disattiva accovacciamento; **TORCIA:** accende/spegne la luce.
+- Se sei il cacciatore, appaiono **ATTACCA** (si può tenere premuto) e **SONAR**.
+- **MAPPA** mostra/nasconde la minimappa, **PAUSA** apre il pannello con il cursore per la sensibilità visuale.
+- Su Android/iOS, se passi ad altre app o metti in secondo piano la scheda, i comandi vengono rilasciati per evitare che il personaggio continui a camminare da solo. La partita online prosegue.
+- I comandi desktop rimangono funzionanti. In caso di breve disconnessione o aggiornamento della pagina, il server tenta di ripristinare automaticamente la stanza e il personaggio. Se tutti escono, la stanza rimane recuperabile per circa 3 minuti; i riavvii del servizio Render continuano invece ad azzerare la memoria.
+
 ### Comandi
 
 | Tasto | Funzione |
@@ -73,7 +90,8 @@ night-shift-last-survivors/
 ├── public/
 │   ├── index.html             # Menu, lobby, HUD e risultati
 │   ├── style.css              # Grafica dell'interfaccia
-│   ├── game.js                # Scena Three.js, animatronico e audio
+│   ├── game.js                # Scena Three.js, animatronico, input touch e audio
+│   ├── controls.js            # Matematica dei comandi PC e joystick touch
 │   └── world.js               # Mappa e movimento condivisi
 └── tests/
     └── world.test.js          # Test automatici della mappa

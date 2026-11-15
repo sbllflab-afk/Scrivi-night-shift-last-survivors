@@ -23,6 +23,11 @@ const names=['FANTASMA','UMBRA','ECHO','RAVEN','NOVA','ASH','MOTH','VEIL','NOX',
 const randomCode=()=>randomBytes(4).toString('hex').slice(0,5).toUpperCase();
 const cleanName=value=>String(value||'Sopravvissuto').replace(/[^\p{L}\p{N} _-]/gu,'').trim().slice(0,16)||'Sopravvissuto';
 const roomOf=socket=>rooms.get(socket.data.room);
+const newSession=()=>randomBytes(18).toString('hex');
+function rememberPlayer(r,socket,name,pref){
+  const token=newSession();socket.data.resumeToken=token;
+  r.sessions.set(token,{id:socket.id,name,pref});return token;
+}
 const event=(r,text,type='notice')=>{io.to(r.code).emit('match:event',{id:++r.eventId,text,type});};
 const publicLobby=r=>({code:r.code,phase:r.phase,host:r.host,fillBots:r.fillBots,
   people:[...r.people.entries()].map(([id,p])=>({id,name:p.name,pref:p.pref})),
@@ -30,21 +35,28 @@ const publicLobby=r=>({code:r.code,phase:r.phase,host:r.host,fillBots:r.fillBots
 const syncLobby=r=>io.to(r.code).emit('room:state',publicLobby(r));
 function makeRoom(socket,name) {
   let code;do{code=randomCode();}while(rooms.has(code));
-  const r={code,host:socket.id,phase:'lobby',fillBots:true,winner:'',people:new Map(),
+  const r={code,host:socket.id,phase:'lobby',fillBots:true,winner:'',people:new Map(),sessions:new Map(),emptyAt:0,
     players:new Map(),generators:[],exits:[],timeLeft:ROUND_SECONDS,lastTick:0,
     chat:[],eventId:0,startedAt:0};
-  r.people.set(socket.id,{name:cleanName(name),pref:'survivor'});rooms.set(code,r);
+  const clean=cleanName(name);
+  r.people.set(socket.id,{name:clean,pref:'survivor'});
+  rememberPlayer(r,socket,clean,'survivor');rooms.set(code,r);
   socket.join(code);socket.data.room=code;syncLobby(r);return r;
 }
-function leave(socket) {
+function leave(socket,explicit=false) {
   const r=roomOf(socket);if(!r)return;
   socket.leave(r.code);socket.data.room=null;r.people.delete(socket.id);
+  if(explicit&&socket.data.resumeToken)r.sessions.delete(socket.data.resumeToken);
+  socket.data.resumeToken=null;
   if(r.phase==='playing'&&r.players.has(socket.id)) {
     const p=r.players.get(socket.id);p.bot=true;p.name=`${p.name} [IA]`;
     p.input={};event(r,`${p.name.replace(' [IA]','')} sostituito da un bot.`);
   }
-  if(r.people.size===0){rooms.delete(r.code);return;}
-  if(r.host===socket.id)r.host=r.people.keys().next().value;
+  if(r.people.size===0){
+    if(explicit){rooms.delete(r.code);return;}
+    r.emptyAt=Date.now();
+  }
+  if(r.host===socket.id)r.host=r.people.keys().next().value||socket.id;
   syncLobby(r);
 }
 function mkPlayer(id,name,role,bot,index=0) {
@@ -55,7 +67,7 @@ function mkPlayer(id,name,role,bot,index=0) {
     sprint:false,crouch:false,flashlight:role!=='hunter',input:{},
     attackCd:0,abilityCd:0,reveal:0,invulnerable:0,slow:0,
     heal:0,escapeCharge:0,interact:'',botTarget:null,path:[],pathAt:0,
-    botRepath:0,step:0,gesture:0};
+    botRepath:0,step:0,gesture:0,lastInputAt:Date.now()};
 }
 function startRoom(r) {
   const users=[...r.people.entries()];
@@ -131,7 +143,7 @@ function movePlayer(p,dt) {
   if(!p.alive||p.escaped)return;
   const input=p.input||{};const f=clamp(Number(input.f)||0,-1,1),s=clamp(Number(input.s)||0,-1,1);
   if(Number.isFinite(input.yaw))p.yaw=normalizeAngle(input.yaw);
-  const len=Math.hypot(f,s)||1;
+  const len=Math.max(1,Math.hypot(f,s));
   let speed=p.role==='hunter'?5.55:4.55;
   p.sprint=Boolean(input.sprint)&&((p.role==='hunter')||p.stamina>1)&&f>0;
   p.crouch=p.role==='survivor'&&Boolean(input.crouch);
@@ -231,7 +243,10 @@ function tick(r,dt) {
     p.attackCd=Math.max(0,p.attackCd-dt);p.abilityCd=Math.max(0,p.abilityCd-dt);
     p.invulnerable=Math.max(0,p.invulnerable-dt);p.slow=Math.max(0,p.slow-dt);p.reveal=Math.max(0,p.reveal-dt);
   }
-  for(const p of r.players.values()){if(p.bot)updateBot(r,p,dt);else movePlayer(p,dt);}
+  for(const p of r.players.values()){
+    if(!p.bot&&Date.now()-p.lastInputAt>450)p.input={...p.input,f:0,s:0,sprint:false,interact:false};
+    if(p.bot)updateBot(r,p,dt);else movePlayer(p,dt);
+  }
   for(const p of r.players.values())updateInteraction(r,p,dt);
   const survivors=[...r.players.values()].filter(p=>p.role==='survivor');
   if(!survivors.some(p=>p.alive&&!p.escaped)) {
@@ -245,8 +260,8 @@ function tick(r,dt) {
 
 io.on('connection',socket=>{
   socket.on('room:create',(data={},ack)=>{
-    if(typeof ack!=='function')return;leave(socket);
-    const r=makeRoom(socket,data.name);ack({ok:true,code:r.code});
+    if(typeof ack!=='function')return;leave(socket,true);
+    const r=makeRoom(socket,data.name);ack({ok:true,code:r.code,token:socket.data.resumeToken});
   });
   socket.on('room:join',(data={},ack)=>{
     if(typeof ack!=='function')return;
@@ -254,14 +269,51 @@ io.on('connection',socket=>{
     if(!r)return ack({ok:false,error:'Stanza non trovata. Controlla il codice.'});
     if(r.phase!=='lobby')return ack({ok:false,error:'Partita già iniziata. Attendi il prossimo turno.'});
     if(r.people.size>=5)return ack({ok:false,error:'Stanza piena (massimo 5 giocatori).'});
-    leave(socket);r.people.set(socket.id,{name:cleanName(data.name),pref:'random'});
-    socket.join(r.code);socket.data.room=r.code;syncLobby(r);
-    ack({ok:true,code:r.code});
+    leave(socket,true);const clean=cleanName(data.name);
+    r.people.set(socket.id,{name:clean,pref:'random'});
+    socket.join(r.code);socket.data.room=r.code;r.emptyAt=0;
+    rememberPlayer(r,socket,clean,'random');syncLobby(r);
+    ack({ok:true,code:r.code,token:socket.data.resumeToken});
+  });
+  // Recover a phone after Wi-Fi/mobile network changes or a page refresh.
+  socket.on('room:resume',(data={},ack)=>{
+    if(typeof ack!=='function')return;
+    const code=String(data.code||'').toUpperCase().trim();
+    const token=String(data.token||'');
+    const r=rooms.get(code),session=r?.sessions.get(token);
+    if(!session)return ack({ok:false,error:'Stanza scaduta o sessione non riconosciuta.'});
+    const oldId=session.id;
+    const previous=io.sockets.sockets.get(oldId);
+    if(previous&&previous.id!==socket.id){
+      previous.leave(r.code);previous.data.room=null;previous.data.resumeToken=null;
+      previous.disconnect(true);
+    }
+    if(roomOf(socket))leave(socket,true);
+    const oldPlayer=r.players.get(oldId);
+    if(r.phase==='playing'&&!oldPlayer)return ack({ok:false,error:'Giocatore non più recuperabile.'});
+    r.people.delete(oldId);
+    r.people.set(socket.id,{name:session.name,pref:session.pref});
+    r.emptyAt=0;
+    if(r.host===oldId)r.host=socket.id;
+    if(oldPlayer){
+      r.players.delete(oldId);oldPlayer.id=socket.id;oldPlayer.name=session.name;
+      oldPlayer.bot=false;oldPlayer.input={};oldPlayer.lastInputAt=Date.now();
+      r.players.set(socket.id,oldPlayer);
+    }
+    session.id=socket.id;socket.data.room=code;socket.data.resumeToken=token;
+    socket.join(code);
+    ack({ok:true,code,token,phase:r.phase});
+    syncLobby(r);
+    if(r.phase==='playing')socket.emit('match:start',snapshot(r));
+    if(r.phase==='ended')socket.emit('match:end',{winner:r.winner,reason:'La partita è terminata durante la disconnessione.',stats:snapshot(r)});
   });
   socket.on('lobby:pref',value=>{
     const r=roomOf(socket),p=r?.people.get(socket.id);
     if(!r||r.phase!=='lobby'||!p)return;
-    if(['hunter','survivor','random'].includes(value)){p.pref=value;syncLobby(r);}
+    if(['hunter','survivor','random'].includes(value)){
+      p.pref=value;const session=r.sessions.get(socket.data.resumeToken);
+      if(session)session.pref=value;syncLobby(r);
+    }
   });
   socket.on('lobby:bots',value=>{
     const r=roomOf(socket);if(!r||r.host!==socket.id||r.phase!=='lobby')return;
@@ -278,7 +330,7 @@ io.on('connection',socket=>{
     p.input={f:clamp(Number(data.f)||0,-1,1),s:clamp(Number(data.s)||0,-1,1),
       yaw:Number.isFinite(data.yaw)?normalizeAngle(data.yaw):p.yaw,
       sprint:!!data.sprint,crouch:!!data.crouch,interact:!!data.interact};
-    p.flashlight=!!data.flashlight;
+    p.flashlight=!!data.flashlight;p.lastInputAt=Date.now();
   });
   socket.on('match:attack',()=>{
     const r=roomOf(socket),p=r?.players.get(socket.id);
@@ -302,13 +354,16 @@ io.on('connection',socket=>{
     r.phase='lobby';r.players.clear();r.generators=[];r.exits=[];r.winner='';
     syncLobby(r);ack?.({ok:true});
   });
-  socket.on('room:leave',()=>leave(socket));
+  socket.on('room:leave',()=>leave(socket,true));
   socket.on('disconnect',()=>leave(socket));
 });
 let frame=0,last=Date.now();
 setInterval(()=>{
   const now=Date.now();const dt=clamp((now-last)/1000,.005,.09);last=now;
-  for(const r of rooms.values())if(r.phase==='playing')tick(r,dt);
+  for(const r of rooms.values()){
+    if(r.emptyAt&&now-r.emptyAt>180000){rooms.delete(r.code);continue;}
+    if(r.phase==='playing')tick(r,dt);
+  }
   if(++frame%2===0)for(const r of rooms.values())if(r.phase==='playing')io.to(r.code).emit('match:state',snapshot(r));
 },50);
 const PORT=Number(process.env.PORT)||3000;

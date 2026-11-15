@@ -1,5 +1,5 @@
 # NIGHT SHIFT — LAST SURVIVORS | Deploy gratuito su Render
-# Inserire questo file nella root del repository GitHub insieme a package.json.
+# Repository esistente: cartella night-shift-last-survivors/ (rootDir definita sotto).
 services:
   - type: web
     name: night-shift-last-survivors

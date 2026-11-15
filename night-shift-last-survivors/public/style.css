@@ -6,3 +6,102 @@
 @keyframes blink{50%{opacity:.45}}@keyframes feedIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:860px){#menu{padding-left:35px}.menu-main{max-width:92vw}.menu-aside{display:none}.title-lockup h1{font-size:clamp(60px,12vw,105px)}.subtitle{letter-spacing:6px}.lobby-right{display:none}#lobby{padding:26px;justify-content:center}.lobby-panel{width:min(530px,95vw)}#sideHud{left:16px;top:104px;transform:scale(.75);transform-origin:top left}#topHud{left:18px;right:18px}.logo-mini span{display:none}#objectiveText{font-size:16px}#bottomHud{left:18px;right:18px;bottom:18px}.tool-panel{display:none}.key-legend{font-size:8px}.right{display:none}}
 @media(max-height:700px){.menu-main{transform:scale(.86);transform-origin:center left}.lobby-panel{transform:scale(.87);transform-origin:center left;max-height:110vh}.lobby-right{transform:scale(.85)}#sideHud{top:95px;transform:scale(.78);transform-origin:top left}#feed{top:390px}} 
+
+
+/* ---------------- TOUCH-FIRST PHONE LAYOUT (v1.1) ---------------- */
+html,body {overscroll-behavior:none}
+#scene {touch-action:none;-webkit-user-select:none;user-select:none}
+#touchControls {display:none;position:absolute;inset:0;pointer-events:none;z-index:12;touch-action:none;-webkit-user-select:none;user-select:none}
+.touch-device #hud:not(.hidden) #touchControls {display:block}
+.touch-device #hud:has(#pause:not(.hidden)) #touchControls {visibility:hidden}
+.touch-device #hud:has(#deadOverlay:not(.hidden)) #touchControls {visibility:hidden}
+#touchJoystick {position:absolute;left:calc(16px + env(safe-area-inset-left));bottom:calc(20px + env(safe-area-inset-bottom));width:clamp(108px,25vw,145px);height:clamp(108px,25vw,145px);border-radius:50%;border:2px solid rgba(135,239,220,.48);background:radial-gradient(circle,rgba(30,87,86,.46),rgba(6,21,23,.77));box-shadow:0 0 35px rgba(34,170,155,.15),inset 0 0 18px rgba(97,233,204,.12);pointer-events:auto;touch-action:none}
+.touch-ring {position:absolute;inset:22%;border:1px solid rgba(153,229,212,.28);border-radius:50%}
+#touchKnob {position:absolute;left:50%;top:50%;width:43%;height:43%;transform:translate(-50%,-50%);border-radius:50%;border:2px solid rgba(197,253,230,.74);background:radial-gradient(circle at 38% 30%,rgba(93,195,178,.9),rgba(24,66,70,.92));box-shadow:0 0 16px rgba(101,213,194,.22);pointer-events:none}
+.touch-joy-caption {position:absolute;top:-21px;left:0;right:0;text-align:center;font-size:9px;letter-spacing:2px;color:#b2dfd5}
+#touchActions {position:absolute;bottom:calc(18px + env(safe-area-inset-bottom));right:calc(14px + env(safe-area-inset-right));display:grid;grid-template-columns:repeat(2,minmax(58px,68px));grid-auto-rows:64px;gap:10px;pointer-events:none}
+.touch-btn {position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:0;padding:0;border:1px solid rgba(195,229,212,.47);border-radius:17px;background:rgba(11,30,33,.82);backdrop-filter:blur(7px);color:#dcf6ec;font:700 24px var(--display);box-shadow:0 6px 24px rgba(0,0,0,.38);pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none}
+.touch-btn small{font:700 9px var(--mono);letter-spacing:.4px;color:#cee6de;white-space:nowrap}
+.touch-btn.action{border-color:rgba(249,150,118,.77);background:rgba(115,42,31,.85)}
+.touch-btn.action small{color:#ffe5d6}
+.touch-btn.pressed{background:rgba(43,158,139,.9);border-color:#d2ffe7;transform:scale(.96)}
+.touch-btn.action.pressed{background:rgba(207,83,56,.97)}
+#touchQuick{position:absolute;right:calc(11px + env(safe-area-inset-right));top:calc(53px + env(safe-area-inset-top));display:flex;gap:8px;pointer-events:none}
+#touchQuick button{min-height:36px;min-width:65px;padding:0 9px;color:#dcf4ed;border:1px solid rgba(161,224,212,.42);border-radius:7px;background:rgba(9,25,26,.82);font:700 10px var(--mono);pointer-events:auto;touch-action:none}
+#touchLookTip{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));left:34%;width:32%;text-align:center;pointer-events:none;color:rgba(197,224,212,.63);font-size:8px;line-height:1.45;letter-spacing:1px;text-shadow:0 2px #000}
+.mobile-tips,.touch-settings{display:none}
+.touch-device .mobile-tips,.touch-device .touch-settings{display:block}
+.touch-device .desktop-tips{display:none}
+.touch-settings{margin:14px 0;color:#abc9bf;font-size:11px;letter-spacing:1px}
+.touch-settings label{display:flex;justify-content:space-between;gap:12px;margin:0 0 8px}
+.touch-settings input{width:100%;accent-color:#7ad7bd;touch-action:pan-x}
+.touch-device #menu,.touch-device #lobby {overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.touch-device #menu{align-items:flex-start;padding:calc(24px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));min-height:100dvh}
+.touch-device .menu-main{width:100%;max-width:520px;margin:auto;transform:none!important}
+.touch-device .menu-lines,.touch-device .menu-aside,.touch-device .footer-status{display:none}
+.touch-device .supertitle{font-size:10px;letter-spacing:3px;margin:10px 0 8px}
+.touch-device .title-lockup h1{font-size:clamp(56px,12vw,108px);letter-spacing:-2px;margin:8px 0 16px;white-space:normal}
+.touch-device .subtitle{font-size:20px;letter-spacing:4px;margin-bottom:12px}
+.touch-device .lead{font-size:12px;line-height:1.65}
+.touch-device .menu-controls{margin-top:17px;max-width:480px}
+.touch-device .input-line input,.touch-device .chat-send input{font-size:16px}
+.touch-device .btn{min-height:45px}
+.touch-device #lobby{display:none;align-items:flex-start;padding:calc(15px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));min-height:100dvh}
+.touch-device #lobby.active{display:flex}
+.touch-device .lobby-panel{width:100%;max-width:620px;max-height:none;overflow:visible;transform:none!important}
+.touch-device .lobby-panel h2{font-size:clamp(36px,10vw,60px);margin-top:12px}
+.touch-device .lobby-panel h2 em{letter-spacing:2px}
+.touch-device .room-actions{margin:10px 0 13px}
+.touch-device .chat-send{height:45px}
+.touch-device #topHud{top:calc(8px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));right:calc(12px + env(safe-area-inset-right))}
+.touch-device .logo-mini{font-size:22px}
+.touch-device .hud-objective{max-width:47%;margin:0 6px}
+.touch-device #objectiveText{font-size:13px;line-height:1;letter-spacing:1px}
+.touch-device #objectiveCount{font-size:9px;letter-spacing:.5px}
+.touch-device .time-box{font-size:9px;letter-spacing:0}
+.touch-device .time-box strong{font-size:26px}
+.touch-device #bottomHud{top:calc(53px + env(safe-area-inset-top));bottom:auto;left:calc(12px + env(safe-area-inset-left));right:auto;width:min(50%,230px);display:flex;align-items:flex-start;gap:8px}
+.touch-device .status-panel{min-width:0;width:95px}
+.touch-device #roleLabel,.touch-device .stamina-header,.touch-device .health-line{font-size:8px;letter-spacing:0}
+.touch-device .status-big{font-size:24px;letter-spacing:2px;margin:0}
+.touch-device .stamina-panel{width:100px}
+.touch-device .meter{height:7px;margin:3px 0}
+.touch-device .key-legend,.touch-device .tool-panel{display:none}
+.touch-device #sideHud{top:calc(112px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));width:106px;transform:none}
+.touch-device #genList,.touch-device .middle-label,.touch-device .players-indicator{display:none}
+.touch-device #minimap{width:106px;height:86px;margin-top:3px;opacity:.74}
+.touch-device #feed{top:calc(205px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));width:180px;max-height:95px;overflow:hidden;gap:3px}
+.touch-device .feed-item{font-size:9px;padding:4px 6px}
+.touch-device #dangerWarning{top:calc(50px + env(safe-area-inset-top));font-size:10px;letter-spacing:1px}
+.touch-device #interactContainer{top:46%;width:min(225px,56vw)}
+.touch-device #crosshair{width:17px;height:17px;transform:translate(-50%,-50%) scale(.8)}
+.touch-device #connection{right:calc(10px + env(safe-area-inset-right));bottom:auto;top:calc(8px + env(safe-area-inset-top));font-size:8px;display:none}
+.touch-device #pause{z-index:22;overflow-y:auto;padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom)}
+.touch-device .pause-box{width:min(430px,95vw);padding:22px;max-height:92dvh;overflow-y:auto}
+.touch-device .pause-box h2{font-size:54px;margin:9px 0}
+.touch-device #scoreboard{z-index:20;max-height:70dvh;overflow-y:auto}
+.touch-device #toast{bottom:calc(8px + env(safe-area-inset-bottom));font-size:11px;padding:9px 12px;max-width:60vw}
+@media (pointer:coarse) and (orientation:portrait) {
+  #touchJoystick{width:118px;height:118px;bottom:calc(34px + env(safe-area-inset-bottom))}
+  #touchActions{grid-template-columns:repeat(2,59px);grid-auto-rows:60px;gap:6px;bottom:calc(34px + env(safe-area-inset-bottom))}
+  #touchLookTip{bottom:calc(6px + env(safe-area-inset-bottom));left:30%;width:40%}
+}
+@media (pointer:coarse) and (max-height:480px) and (orientation:landscape) {
+  .touch-device #menu{padding-top:12px}
+  .touch-device .title-lockup h1{font-size:clamp(47px,9vw,79px)}
+  .touch-device .lead{display:none}
+  .touch-device .supertitle{margin-top:2px}
+  .touch-device #sideHud{top:calc(118px + env(safe-area-inset-top))}
+  .touch-device #feed{display:none}
+  .touch-device #touchJoystick{bottom:calc(10px + env(safe-area-inset-bottom));width:105px;height:105px}
+  .touch-device #touchActions{bottom:calc(10px + env(safe-area-inset-bottom));grid-auto-rows:54px;grid-template-columns:repeat(2,60px);gap:6px}
+  .touch-device #touchQuick{top:calc(40px + env(safe-area-inset-top))}
+  .touch-device #touchLookTip{display:none}
+  .touch-device #bottomHud{top:calc(45px + env(safe-area-inset-top))}
+  .touch-device #topHud{top:calc(3px + env(safe-area-inset-top))}
+}
+
+.touch-device #sideHud .hud-label{display:none}
+.touch-device #sideHud{top:calc(144px + env(safe-area-inset-top))}
+.touch-device #feed{top:calc(237px + env(safe-area-inset-top))}
+@media (pointer:coarse) and (max-height:480px) and (orientation:landscape){.touch-device #sideHud{top:calc(106px + env(safe-area-inset-top))}}
